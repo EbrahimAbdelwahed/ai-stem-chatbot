@@ -141,7 +141,7 @@ export async function getChatsByUserId({
             ? and(whereCondition, eq(chat.userId, id))
             : eq(chat.userId, id),
         )
-        .orderBy(desc(chat.createdAt))
+        .orderBy(desc(chat.createdAt), desc(chat.id))
         .limit(extendedLimit);
 
     let filteredChats: Array<Chat> = [];
@@ -160,7 +160,7 @@ export async function getChatsByUserId({
         );
       }
 
-      filteredChats = await query(gt(chat.createdAt, selectedChat.createdAt));
+      filteredChats = await query(lt(chat.createdAt, selectedChat.createdAt));
     } else if (endingBefore) {
       const [selectedChat] = await db
         .select()
@@ -175,7 +175,7 @@ export async function getChatsByUserId({
         );
       }
 
-      filteredChats = await query(lt(chat.createdAt, selectedChat.createdAt));
+      filteredChats = await query(gt(chat.createdAt, selectedChat.createdAt));
     } else {
       filteredChats = await query();
     }
