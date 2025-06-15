@@ -23,6 +23,8 @@ import { createDocument } from '@/lib/ai/tools/create-document';
 import { updateDocument } from '@/lib/ai/tools/update-document';
 import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
 import { getWeather } from '@/lib/ai/tools/get-weather';
+import { createPlotlyChart } from '@/lib/ai/tools/create-plotly-chart';
+import { showMoleculeStructure } from '@/lib/ai/tools/show-molecule-structure';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
@@ -36,6 +38,7 @@ import { after } from 'next/server';
 import type { Chat } from '@/lib/db/schema';
 import { differenceInSeconds } from 'date-fns';
 import { ChatSDKError } from '@/lib/errors';
+import { Weather } from '@/components/weather';
 
 export const maxDuration = 60;
 
@@ -134,10 +137,13 @@ export async function POST(request: Request) {
           chatId: id,
           id: message.id,
           role: 'user',
-          parts: message.parts,
-          attachments: message.experimental_attachments ?? [],
+          content: '',
+          parts: message.parts as unknown,
+          attachments: (message.experimental_attachments ?? []) as unknown,
+          tokenUsage: null as unknown,
+          metadata: null as unknown,
           createdAt: new Date(),
-        },
+        } as any,
       ],
     });
 
@@ -159,6 +165,8 @@ export async function POST(request: Request) {
                   'createDocument',
                   'updateDocument',
                   'requestSuggestions',
+                  'createPlotlyChart',
+                  'showMoleculeStructure',
                 ],
           experimental_transform: smoothStream({ chunking: 'word' }),
           experimental_generateMessageId: generateUUID,
@@ -170,6 +178,8 @@ export async function POST(request: Request) {
               session,
               dataStream,
             }),
+            createPlotlyChart,
+            showMoleculeStructure,
           },
           onFinish: async ({ response }) => {
             if (session.user?.id) {
@@ -194,12 +204,15 @@ export async function POST(request: Request) {
                     {
                       id: assistantId,
                       chatId: id,
-                      role: assistantMessage.role,
-                      parts: assistantMessage.parts,
+                      role: assistantMessage.role as string,
+                      content: '',
+                      parts: assistantMessage.parts as unknown,
                       attachments:
-                        assistantMessage.experimental_attachments ?? [],
+                        (assistantMessage.experimental_attachments ?? []) as unknown,
+                      tokenUsage: null as unknown,
+                      metadata: null as unknown,
                       createdAt: new Date(),
-                    },
+                    } as any,
                   ],
                 });
               } catch (_) {

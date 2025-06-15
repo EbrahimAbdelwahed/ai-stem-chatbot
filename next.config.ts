@@ -11,6 +11,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  webpack: (config) => {
+    config.resolve = config.resolve || {};
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      'plotly.js/dist/plotly': 'plotly.js-dist-min',
+    };
+    return config;
+  },
 };
 
 export default nextConfig;

@@ -19,6 +19,23 @@ import { MessageEditor } from './message-editor';
 import { DocumentPreview } from './document-preview';
 import { MessageReasoning } from './message-reasoning';
 import type { UseChatHelpers } from '@ai-sdk/react';
+import dynamic from 'next/dynamic';
+import Spinner from './ui/Spinner';
+
+// Dynamically load the client-only Plotly component
+const PlotlyChart = dynamic(
+  () => import('@/components/visualizations/PlotlyChart').then((m) => m.PlotlyChart),
+  { ssr: false },
+);
+
+// Dynamically load the Molstar viewer so it doesn't increase the initial bundle
+const MolstarViewer = dynamic(
+  () =>
+    import('@/components/visualizations/MolstarViewer').then(
+      (m) => m.MolstarViewer,
+    ),
+  { ssr: false },
+);
 
 const PurePreviewMessage = ({
   chatId,
@@ -183,6 +200,14 @@ const PurePreviewMessage = ({
                           args={args}
                           isReadonly={isReadonly}
                         />
+                      ) : toolName === 'createPlotlyChart' ? (
+                        <div className="flex items-center justify-center p-4">
+                          <Spinner />
+                        </div>
+                      ) : toolName === 'showMoleculeStructure' ? (
+                        <div className="flex items-center justify-center p-4">
+                          <Spinner />
+                        </div>
                       ) : null}
                     </div>
                   );
@@ -211,6 +236,16 @@ const PurePreviewMessage = ({
                           type="request-suggestions"
                           result={result}
                           isReadonly={isReadonly}
+                        />
+                      ) : toolName === 'createPlotlyChart' ? (
+                        <PlotlyChart
+                          figure={(result as any).figure}
+                          title={(result as any).title}
+                        />
+                      ) : toolName === 'showMoleculeStructure' ? (
+                        <MolstarViewer
+                          pdbId={(result as any).pdbId}
+                          title={(result as any).title}
                         />
                       ) : (
                         <pre>{JSON.stringify(result, null, 2)}</pre>
