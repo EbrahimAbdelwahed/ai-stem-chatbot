@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { DefaultPluginUISpec, PluginUISpec } from 'molstar/lib/mol-plugin-ui/spec';
+import { DefaultPluginUISpec, type PluginUISpec } from 'molstar/lib/mol-plugin-ui/spec';
 import { PluginUIContext } from 'molstar/lib/mol-plugin-ui/context';
 import { Plugin } from 'molstar/lib/mol-plugin-ui/plugin';
 import { createRoot } from 'react-dom/client';
-import 'molstar/lib/mol-plugin-ui/skin/light.scss';
+// NOTE: The global Mol* stylesheet is now imported once in `app/layout.tsx` to avoid
+// build-time errors with global CSS from node_modules and to keep bundle size down.
+// import 'molstar/lib/mol-plugin-ui/skin/light.scss';
 
 interface MolstarViewerProps {
   pdbId: string;
@@ -44,6 +46,11 @@ export const MolstarViewer: React.FC<MolstarViewerProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Token used to cancel outdated loads (e.g. React 18 strict-mode remounts or
+  // rapid prop changes). If the component unmounts we increment the counter so
+  // any pending async work can abort early.
+  const loadTokenRef = useRef(0);
+
   const initViewer = async () => {
     if (!containerRef.current) return;
 
@@ -75,13 +82,17 @@ export const MolstarViewer: React.FC<MolstarViewerProps> = ({
       // Override plugin.unmount so it doesn't remove the React managed container.
       // The original implementation removes the container element from the DOM which
       // React still expects to own, leading to `removeChild` errors in StrictMode.
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // eslint-disable-next-line
       // @ts-ignore
       plugin.unmount = () => {
-        // Detach Mol* canvas but keep containing div so React can cleanly unmount.
-        if ((plugin as any).canvasContainer) {
-          const c = (plugin as any).canvasContainer as HTMLElement;
-          while (c.firstChild) c.removeChild(c.firstChild);
+        // Prevent Mol* from manipulating DOM nodes that React owns. Simply
+        // release WebGL resources; React will take care of tearing down the
+        // actual elements during its commit phase.
+        try {
+          // canvas3d might be undefined if plugin failed early.
+          (plugin as any).canvas3d?.dispose?.();
+        } catch {
+          /* swallow */
         }
       };
 
@@ -105,6 +116,7 @@ export const MolstarViewer: React.FC<MolstarViewerProps> = ({
   };
 
   const loadStructure = async (plugin: PluginUIContext, pdbId: string) => {
+    const token = ++loadTokenRef.current;
     try {
       // Clear existing state before loading the new structure to avoid layering
       plugin.clear();
@@ -113,6 +125,9 @@ export const MolstarViewer: React.FC<MolstarViewerProps> = ({
         url: `https://models.rcsb.org/${pdbId}.bcif`,
         isBinary: true,
       });
+
+      // If the component has been unmounted or a newer request started, exit.
+      if (token !== loadTokenRef.current) return;
 
       // Parse trajectory
       const trajectory = await plugin.builders.structure.parseTrajectory(data, 'mmcif');
@@ -128,10 +143,14 @@ export const MolstarViewer: React.FC<MolstarViewerProps> = ({
           isBinary: false,
         });
 
+        if (token !== loadTokenRef.current) return;
+
         const trajectory = await plugin.builders.structure.parseTrajectory(data, 'mmcif');
         await plugin.builders.structure.hierarchy.applyPreset(trajectory, 'default');
         
       } catch (fallbackErr) {
+        // Ensure viewer is cleared so no half-loaded state lingers.
+        plugin.clear();
         throw new Error(`Failed to load structure from both BCIF and CIF sources: ${fallbackErr}`);
       }
     }
@@ -143,6 +162,9 @@ export const MolstarViewer: React.FC<MolstarViewerProps> = ({
 
     // Dispose plugin on unmount to free resources
     return () => {
+      // Invalidate any in-flight load requests.
+      loadTokenRef.current++;
+
       // Capture current references and immediately null them out so any
       // logic running after unmount sees a "disposed" state.
       const plugin = pluginRef.current;
@@ -230,7 +252,7 @@ export const MolstarViewer: React.FC<MolstarViewerProps> = ({
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/90 z-50">
             <div className="text-center space-y-2">
-              <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+              <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
               <div className="text-sm text-gray-600">Loading {pdbId.toUpperCase()}...</div>
             </div>
           </div>

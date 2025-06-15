@@ -38,7 +38,6 @@ import { after } from 'next/server';
 import type { Chat } from '@/lib/db/schema';
 import { differenceInSeconds } from 'date-fns';
 import { ChatSDKError } from '@/lib/errors';
-import { Weather } from '@/components/weather';
 
 export const maxDuration = 60;
 

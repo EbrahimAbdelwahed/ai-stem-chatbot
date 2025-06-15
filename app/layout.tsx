@@ -4,6 +4,8 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 
 import './globals.css';
+// Global Mol* viewer skin (Sass). Requires `sass` dev dependency.
+import 'molstar/lib/mol-plugin-ui/skin/light.scss';
 import { SessionProvider } from 'next-auth/react';
 
 export const metadata: Metadata = {

@@ -4,7 +4,7 @@ import postgres from 'postgres';
 import * as schema from './schema';
 
 declare global {
-  // eslint-disable-next-line no-var --
+  // eslint-disable-next-line no-var
   var db: ReturnType<typeof drizzle<typeof schema>> | undefined;
 }
 

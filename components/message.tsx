@@ -28,11 +28,11 @@ const PlotlyChart = dynamic(
   { ssr: false },
 );
 
-// Dynamically load the Molstar viewer so it doesn't increase the initial bundle
-const MolstarViewer = dynamic(
+// Dynamically load the MoleculeCard (which lazy-loads Molstar internally)
+const MoleculeCard = dynamic(
   () =>
-    import('@/components/visualizations/MolstarViewer').then(
-      (m) => m.MolstarViewer,
+    import('@/components/visualizations/MoleculeCard').then(
+      (m) => m.MoleculeCard,
     ),
   { ssr: false },
 );
@@ -243,7 +243,7 @@ const PurePreviewMessage = ({
                           title={(result as any).title}
                         />
                       ) : toolName === 'showMoleculeStructure' ? (
-                        <MolstarViewer
+                        <MoleculeCard
                           pdbId={(result as any).pdbId}
                           title={(result as any).title}
                         />
