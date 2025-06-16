@@ -49,7 +49,7 @@ export function MoleculeCard({
         <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/50">
           <h3 className="text-sm font-medium leading-none truncate">{title}</h3>
           <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-            {pdbId.toUpperCase()}
+            {pdbId ? pdbId.toUpperCase() : '—'}
           </span>
         </div>
       )}

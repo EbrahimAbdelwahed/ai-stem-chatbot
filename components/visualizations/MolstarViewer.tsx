@@ -224,7 +224,7 @@ export const MolstarViewer: React.FC<MolstarViewerProps> = ({
           <div className="text-center p-4">
             <div className="text-red-600 font-medium mb-1">Error Loading Structure</div>
             <div className="text-red-500 text-sm">{error}</div>
-            <div className="text-red-400 text-xs mt-2">PDB ID: {pdbId}</div>
+            <div className="text-red-400 text-xs mt-2">PDB ID: {pdbId ? pdbId.toUpperCase() : '—'}</div>
           </div>
         </div>
       </div>
@@ -237,7 +237,7 @@ export const MolstarViewer: React.FC<MolstarViewerProps> = ({
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium leading-none">{title}</h3>
           <div className="text-xs text-gray-500 font-mono bg-gray-100 px-2 py-1 rounded">
-            {pdbId.toUpperCase()}
+            {pdbId ? pdbId.toUpperCase() : '—'}
           </div>
         </div>
       )}
@@ -252,7 +252,7 @@ export const MolstarViewer: React.FC<MolstarViewerProps> = ({
           <div className="absolute inset-0 flex items-center justify-center bg-white/90 z-50">
             <div className="text-center space-y-2">
               <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-              <div className="text-sm text-gray-600">Loading {pdbId.toUpperCase()}...</div>
+              <div className="text-sm text-gray-600">Loading {pdbId ? pdbId.toUpperCase() : ''}...</div>
             </div>
           </div>
         )}
