@@ -19,6 +19,9 @@ export const NGLViewer: React.FC<NGLViewerProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Keep reference to resize handler so it can be removed in cleanup
+  const handleResizeRef = useRef<() => void>(() => {});
+
   useEffect(() => {
     let isDisposed = false;
 
@@ -41,16 +44,20 @@ export const NGLViewer: React.FC<NGLViewerProps> = ({
           return;
         }
 
-        const stage = new StageCtor(stageContainerRef.current!);
+        const stage = new StageCtor(stageContainerRef.current!, {
+          backgroundColor: 'white',
+        });
         stageRef.current = stage;
 
+        const handleResize = () => stage.handleResize();
+        window.addEventListener('resize', handleResize);
+        handleResizeRef.current = handleResize;
+
         stage
-          .loadFile(`rcsb://${pdbId}`)
+          .loadFile(`rcsb://${pdbId}`, { defaultRepresentation: true })
           .then((component: any) => {
-            if (component) {
-              component.addRepresentation('cartoon', {});
-              component.autoView();
-            }
+            // Auto-view is already part of defaultRepresentation but keep for safety
+            component.autoView();
             setIsLoading(false);
           })
           .catch((err: any) => {
@@ -75,6 +82,9 @@ export const NGLViewer: React.FC<NGLViewerProps> = ({
         // ignore dispose errors
       }
       stageRef.current = null;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', handleResizeRef.current);
+      }
     };
   }, [pdbId]);
 
