@@ -1,6 +1,6 @@
 import { db, documents, chunks } from '../db';
 import { generateEmbeddings } from './embedding';
-import { eq, and, or, isNull } from 'drizzle-orm';
+import { eq, or, isNull } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 
 // Defensive text sanitization to ensure no null bytes reach the database

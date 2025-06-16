@@ -21,14 +21,6 @@ interface PlotlyChartProps {
 }
 
 export function PlotlyChart({ figure, title }: PlotlyChartProps) {
-  // In case tool call returns before figure is ready
-  if (!figure) {
-    return (
-      <div className="p-4 text-muted-foreground text-sm italic">
-        Waiting for chart data…
-      </div>
-    );
-  }
   const ref = useRef<any>(null);
 
   // Ensure responsiveness
@@ -46,7 +38,7 @@ export function PlotlyChart({ figure, title }: PlotlyChartProps) {
 
   // Auto-play only after the initial plot is done
   useEffect(() => {
-    if (!figure.frames?.length || typeof window === 'undefined') return;
+    if (!figure?.frames?.length || typeof window === 'undefined') return;
 
     const el = ref.current;
     if (!el) return;
@@ -73,6 +65,15 @@ export function PlotlyChart({ figure, title }: PlotlyChartProps) {
       el.removeListener?.('plotly_afterplot', handleAfterPlot);
     };
   }, [figure?.frames]);
+
+  // Render placeholder if data isn't ready yet (after hooks to satisfy rules-of-hooks)
+  if (!figure) {
+    return (
+      <div className="p-4 text-muted-foreground text-sm italic">
+        Waiting for chart data…
+      </div>
+    );
+  }
 
   return (
     <div className="w-full overflow-x-auto">
