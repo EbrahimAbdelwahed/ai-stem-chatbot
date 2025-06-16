@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Stage } from 'ngl';
 
 interface NGLViewerProps {
   pdbId: string;
@@ -15,36 +14,66 @@ export const NGLViewer: React.FC<NGLViewerProps> = ({
   height = 400,
 }) => {
   const stageContainerRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<Stage | null>(null);
+  // Hold `Stage` instance from NGL once dynamically imported
+  const stageRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isDisposed = false;
+
     if (!stageContainerRef.current) return;
 
     setIsLoading(true);
     setError(null);
 
-    // Initialize NGL Stage
-    const stage = new Stage(stageContainerRef.current);
-    stageRef.current = stage;
+    // Dynamically import NGL only in the browser to avoid SSR issues and missing exports
+    import('ngl')
+      .then((mod) => {
+        if (isDisposed) return;
 
-    stage.loadFile(`rcsb://${pdbId}`)
-      .then(component => {
-        if (component) {
-          component.addRepresentation('cartoon', {});
-          component.autoView();
+        // `Stage` might be a named export or a property on the default export depending on the bundle.
+        const StageCtor: any = (mod as any).Stage || (mod as any)?.default?.Stage;
+
+        if (!StageCtor) {
+          setError('Failed to load NGL Stage constructor.');
+          setIsLoading(false);
+          return;
         }
-        setIsLoading(false);
+
+        const stage = new StageCtor(stageContainerRef.current!);
+        stageRef.current = stage;
+
+        stage
+          .loadFile(`rcsb://${pdbId}`)
+          .then((component: any) => {
+            if (component) {
+              component.addRepresentation('cartoon', {});
+              component.autoView();
+            }
+            setIsLoading(false);
+          })
+          .catch((err: any) => {
+            console.error('NGL Error:', err);
+            setError(`Failed to load structure: ${err?.message || 'Unknown error'}`);
+            setIsLoading(false);
+          });
       })
-      .catch(err => {
-        console.error('NGL Error:', err);
-        setError(`Failed to load structure: ${err.message || 'Unknown error'}`);
-        setIsLoading(false);
+      .catch((err) => {
+        console.error('Failed to dynamically import NGL:', err);
+        if (!isDisposed) {
+          setError('Failed to load NGL library.');
+          setIsLoading(false);
+        }
       });
 
     return () => {
-      stageRef.current?.dispose();
+      isDisposed = true;
+      try {
+        stageRef.current?.dispose?.();
+      } catch (err) {
+        // ignore dispose errors
+      }
       stageRef.current = null;
     };
   }, [pdbId]);
