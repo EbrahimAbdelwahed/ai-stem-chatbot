@@ -1,4 +1,5 @@
-import { db, documents, chunks } from '../db';
+import { db } from '../db';
+import { document as documents, chunks } from '../db/schema';
 import { generateEmbeddings } from './embedding';
 import { eq, or, isNull } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
@@ -39,7 +40,8 @@ export async function addDocument(title: string, content: string, userId?: strin
     .values({
       title: sanitizedTitle,
       content: sanitizedContent,
-      userId: userId || null, // Associate with user if authenticated, null for anonymous
+      userId: userId ?? '00000000-0000-0000-0000-000000000000', // placeholder ID for anonymous
+      createdAt: new Date(),
     })
     .returning({ id: documents.id });
 

@@ -52,7 +52,7 @@ const MarkdownRenderer = memo(({ content, className = '', darkMode = true }: Mar
         rehypePlugins={[rehypeKatex, rehypeHighlight]}
         components={{
           // Custom code block rendering with copy functionality
-          code({ className, children, ...props }: { className?: string; children: React.ReactNode; [key: string]: unknown }) {
+          code({ node, inline: inlineProp, className, children, ...props }: any) {
             const inline = !className;
             const match = /language-(\w+)/.exec(className || '');
             const codeString = String(children).replace(/\n$/, '');

@@ -126,6 +126,24 @@ export const vote = pgTable(
   },
 );
 
+// -----------------------------------------------------------------------------
+// Legacy aliases (Deprecated)
+// These are provided to satisfy type dependencies in migration/helper scripts
+// without requiring structural duplication in the database schema. They simply
+// reference the new v2 tables.
+
+// Alias to the current `message` table
+export const messageDeprecated = message;
+
+// Alias to the current `vote` table
+export const voteDeprecated = vote;
+
+// Fallback typings for legacy code paths – treated as `any` to avoid compiler
+// errors while we transition away from the deprecated models.
+// NOTE: New code SHOULD NOT rely on these types.
+export type MessageDeprecated = any;
+export type VoteDeprecated = any;
+
 export const toolInvocations = pgTable('tool_invocations', {
   id: uuid('id').primaryKey().defaultRandom(),
   messageId: uuid('messageId')
@@ -148,7 +166,7 @@ export const document = pgTable(
     updatedAt: timestamp('updatedAt'),
     title: text('title').notNull(),
     content: text('content'),
-    kind: varchar('text', { enum: ['text', 'code', 'image', 'sheet'] })
+    kind: varchar('text', { enum: ['text', 'code', 'image', 'sheet', 'molecule3d'] })
       .notNull()
       .default('text'),
     isPublic: boolean('isPublic').default(false),

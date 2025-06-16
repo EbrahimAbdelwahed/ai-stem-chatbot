@@ -31,7 +31,7 @@ export interface ToolInvocationData {
 export async function createConversation(data: ConversationData) {
   try {
     const [conversation] = await db.insert(chat)
-      .values(data)
+      .values({ ...data, userId: data.userId ?? '00000000-0000-0000-0000-000000000000' })
       .returning()
     
     return conversation
