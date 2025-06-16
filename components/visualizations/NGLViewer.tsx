@@ -31,8 +31,10 @@ export const NGLViewer: React.FC<NGLViewerProps> = ({
 
     stage.loadFile(`rcsb://${pdbId}`)
       .then(component => {
-        component.addRepresentation('cartoon');
-        component.autoView();
+        if (component) {
+          component.addRepresentation('cartoon', {});
+          component.autoView();
+        }
         setIsLoading(false);
       })
       .catch(err => {
