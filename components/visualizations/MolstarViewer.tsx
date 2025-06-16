@@ -155,23 +155,22 @@ export const MolstarViewer: React.FC<MolstarViewerProps> = ({
       // finishing the current render/commit cycle. Defer the teardown to the
       // micro-task queue so it runs right after React is done.
       queueMicrotask(() => {
-        // 1. Unmount the React root we created for the Mol* UI first so that
-        //    DOM nodes are removed in the order React expects.
-        try {
-          root?.unmount();
-        } catch (e) {
-          console.warn('Molstar root unmount error', e);
-        }
-
-        // 2. Dispose the Mol* plugin. This will trigger its own internal cleanup
-        //    (including plugin.unmount we patched above) but at this point the
-        //    React tree is already gone so there's no risk of double-removal.
+        // 1. Dispose the Mol* plugin. This will trigger its own internal cleanup
+        //    (including plugin.unmount we patched above).
         if (plugin) {
           try {
             plugin.dispose();
           } catch (e) {
             console.warn('Molstar plugin dispose error', e);
           }
+        }
+
+        // 2. Unmount the React root we created for the Mol* UI.
+        //    DOM nodes are removed in the order React expects.
+        try {
+          root?.unmount();
+        } catch (e) {
+          console.warn('Molstar root unmount error', e);
         }
       });
     };
