@@ -1,9 +1,11 @@
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { auth } from '@/app/(auth)/auth';
 import { getUserVisualizations } from '@/lib/db/queries';
-import PlaygroundWorkspace from '@/components/playground-workspace'; // Import the new component
-import Link from 'next/link'; // For the "Back" button
-import { Button } from '@/components/ui/button'; // For styling the "Back" button
-// import { ChevronLeft } from 'lucide-react'; // Optional: for an icon button
+import { PlaygroundCard } from '@/components/playground-card';
+import PlaygroundWorkspace from '@/components/playground-workspace';
+import { Button } from '@/components/ui/button';
+import { PlusIcon, ChevronLeft } from 'lucide-react';
 
 interface PlaygroundPageProps {
   searchParams: {
@@ -14,34 +16,26 @@ interface PlaygroundPageProps {
 
 export default async function PlaygroundPage({ searchParams }: PlaygroundPageProps) {
   const session = await auth();
-  const userId = session?.user?.id;
-
-  // Data fetching for gallery (can be kept for when gallery is implemented)
-  // if (userId) {
-  //   try {
-  //     const visualizations = await getUserVisualizations(userId);
-  //     // console.log('Fetched visualizations:', visualizations);
-  //   } catch (error) {
-  //     console.error('Error fetching visualizations:', error);
-  //   }
-  // } else {
-  //   // console.log('User not authenticated or session/user ID missing.');
-  // }
+  if (!session?.user?.id) {
+    redirect('/login?callbackUrl=/playground');
+  }
+  const userId = session.user.id;
 
   const { id, new: isNew } = searchParams;
 
+  // If we are in a workspace view (either new or existing), render the workspace.
   if (id || isNew === 'true') {
     return (
-      <div className="flex flex-col h-screen p-4">
-        <div className="mb-4">
+      <div className="flex flex-col h-full p-4">
+        <div className="mb-4 flex-shrink-0">
           <Link href="/playground">
-            <Button variant="outline">
-              {/* <ChevronLeft className="mr-2 h-4 w-4" /> Optional Icon */}
+            <Button variant="outline" size="sm">
+              <ChevronLeft className="mr-2 h-4 w-4" />
               Back to Gallery
             </Button>
           </Link>
         </div>
-        <div className="flex-grow">
+        <div className="flex-grow min-h-0">
           <PlaygroundWorkspace
             visualizationId={id}
             isNew={isNew === 'true'}
@@ -51,20 +45,34 @@ export default async function PlaygroundPage({ searchParams }: PlaygroundPagePro
     );
   }
 
-  // Render Gallery View (Placeholder for now, as per Task 5.2)
+  // Otherwise, fetch data for and render the gallery view.
+  const userVisualizations = await getUserVisualizations(userId);
+
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-semibold mb-4">Visualizations Gallery</h1>
-      {/* TODO: Implement the Gallery View component from Task 5.2 here */}
-      <p>Gallery of visualizations will be displayed here.</p>
-      <p>
-        To create a new visualization, you would typically click a 'Create New' button
-        which would navigate to <Link href="/playground?new=true" className="text-blue-500 hover:underline">/playground?new=true</Link>.
-      </p>
-      <p>
-        To view an existing one, you would click on a card which would navigate to something like
-        <Link href="/playground?id=example-id" className="text-blue-500 hover:underline">/playground?id=example-id</Link>.
-      </p>
+    <div className="container mx-auto py-8 px-4 md:px-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Playground</h1>
+        <Link href="/playground?new=true">
+          <Button>
+            <PlusIcon className="mr-2 h-4 w-4" /> Create New
+          </Button>
+        </Link>
+      </div>
+
+      {userVisualizations.length === 0 ? (
+        <div className="text-center text-muted-foreground mt-12">
+          <p className="text-lg">You haven't created any visualizations yet.</p>
+          <p className="text-sm mt-2">
+            Click "Create New" to get started!
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {userVisualizations.map((viz) => (
+            <PlaygroundCard key={viz.id} visualization={viz} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
