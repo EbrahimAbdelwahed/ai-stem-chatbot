@@ -323,6 +323,23 @@ export const userUsage = pgTable('user_usage', {
   lastReset: timestamp('last_reset').defaultNow(),
 });
 
+// --- VISUALIZATIONS TABLE ---
+
+export const visualizations = pgTable('visualizations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('userId')
+    .notNull()
+    .references(() => user.id),
+  chatId: uuid('chatId')
+    .notNull()
+    .references(() => chat.id),
+  type: varchar('type', { length: 50, enum: ['plot', 'molecule'] }).notNull(),
+  title: varchar('title', { length: 256 }).notNull(),
+  description: text('description'),
+  data: jsonb('data').notNull(),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+});
+
 // --- TYPE EXPORTS ---
 
 export type User = InferSelectModel<typeof user>;
@@ -334,3 +351,5 @@ export type Suggestion = InferSelectModel<typeof suggestion>;
 export type Stream = InferSelectModel<typeof stream>;
 export type Molecule = InferSelectModel<typeof molecules>;
 export type Chunk = InferSelectModel<typeof chunks>;
+// Add new type export for visualizations
+export type Visualization = InferSelectModel<typeof visualizations>;
