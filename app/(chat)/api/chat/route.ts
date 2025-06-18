@@ -158,7 +158,11 @@ export async function POST(request: Request) {
         const result = streamText({
           model: myProvider.languageModel(selectedChatModel),
           system: systemPrompt({ selectedChatModel, requestHints }),
-          messages,
+          messages, // This is the array of CoreMessage objects
+          context: { // Add this context object
+            chatId: id, // 'id' is the variable holding the chat ID in this route
+            messages: messages // Pass the messages array into the context as well
+          },
           maxSteps: 5,
           experimental_activeTools:
             selectedChatModel === 'chat-model-reasoning'

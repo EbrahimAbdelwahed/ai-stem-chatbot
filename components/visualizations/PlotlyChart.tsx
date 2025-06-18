@@ -18,9 +18,10 @@ export interface FigureJSON {
 interface PlotlyChartProps {
   figure: FigureJSON;
   title?: string;
+  visualizationId?: string; // Add this line
 }
 
-export function PlotlyChart({ figure, title }: PlotlyChartProps) {
+export function PlotlyChart({ figure, title, visualizationId }: PlotlyChartProps) {
   const ref = useRef<any>(null);
 
   // Ensure responsiveness
