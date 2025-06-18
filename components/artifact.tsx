@@ -26,6 +26,8 @@ import { codeArtifact } from '@/artifacts/code/client';
 import { sheetArtifact } from '@/artifacts/sheet/client';
 import { textArtifact } from '@/artifacts/text/client';
 import { molecule3dArtifact } from '@/artifacts/molecule3d/client';
+import PlotlyArtifact from '@/components/visualizations/plotly-artifact';
+import MoleculeArtifact from '@/components/visualizations/molecule-artifact';
 import equal from 'fast-deep-equal';
 import type { UseChatHelpers } from '@ai-sdk/react';
 import type { VisibilityType } from './visibility-selector';
@@ -453,25 +455,46 @@ function PureArtifact({
             </div>
 
             <div className="dark:bg-muted bg-background h-full overflow-y-scroll !max-w-full items-center">
-              <artifactDefinition.content
-                title={artifact.title}
-                content={
-                  isCurrentVersion
-                    ? artifact.content
-                    : getDocumentContentById(currentVersionIndex)
+              {(() => {
+                // Assuming artifact has `name` and `result` properties.
+                // The type `UIArtifact` might need to be updated if not already.
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const currentArtifact = artifact as any;
+
+                if (currentArtifact.name === 'createPlotlyChart' && currentArtifact.result?.visualizationId) {
+                  return <PlotlyArtifact visualizationId={currentArtifact.result.visualizationId} />;
+                } else if (currentArtifact.name === 'showMoleculeStructure' && currentArtifact.result?.visualizationId) {
+                  return <MoleculeArtifact visualizationId={currentArtifact.result.visualizationId} />;
+                } else {
+                  // Fallback to existing logic if artifactDefinition is available
+                  if (artifactDefinition) {
+                    return (
+                      <artifactDefinition.content
+                        title={artifact.title}
+                        content={
+                          isCurrentVersion
+                            ? artifact.content
+                            : getDocumentContentById(currentVersionIndex)
+                        }
+                        mode={mode}
+                        status={artifact.status}
+                        currentVersionIndex={currentVersionIndex}
+                        suggestions={[]}
+                        onSaveContent={saveContent}
+                        isInline={false}
+                        isCurrentVersion={isCurrentVersion}
+                        getDocumentContentById={getDocumentContentById}
+                        isLoading={isDocumentsFetching && !artifact.content}
+                        metadata={metadata}
+                        setMetadata={setMetadata}
+                      />
+                    );
+                  } else {
+                    // Handle cases where artifactDefinition might not be found
+                    return <div>Unsupported artifact type or missing definition.</div>;
+                  }
                 }
-                mode={mode}
-                status={artifact.status}
-                currentVersionIndex={currentVersionIndex}
-                suggestions={[]}
-                onSaveContent={saveContent}
-                isInline={false}
-                isCurrentVersion={isCurrentVersion}
-                getDocumentContentById={getDocumentContentById}
-                isLoading={isDocumentsFetching && !artifact.content}
-                metadata={metadata}
-                setMetadata={setMetadata}
-              />
+              })()}
 
               <AnimatePresence>
                 {isCurrentVersion && (
