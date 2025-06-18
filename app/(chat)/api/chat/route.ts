@@ -159,7 +159,7 @@ export async function POST(request: Request) {
           model: myProvider.languageModel(selectedChatModel),
           system: systemPrompt({ selectedChatModel, requestHints }),
           messages, // This is the array of CoreMessage objects
-          context: { // Add this context object
+          context: {
             chatId: id, // 'id' is the variable holding the chat ID in this route
             messages: messages // Pass the messages array into the context as well
           },
