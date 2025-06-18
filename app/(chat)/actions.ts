@@ -1,27 +1,32 @@
 'use server';
 
-import { generateText, type UIMessage } from 'ai';
-import { createAI, streamUI } from 'ai/rsc';
-import { nanoid } from 'nanoid';
+import { type UIMessage } from 'ai';
+import { generateText, streamUI, createAI, getMutableAIState } from 'ai/rsc';
 import { cookies } from 'next/headers';
-import { z } from 'zod';
+import { nanoid } from 'nanoid';
 import { redirect } from 'next/navigation';
+import { z } from 'zod';
+import { eq } from 'drizzle-orm';
+import { v4 as uuidv4 } from 'uuid';
+
+import { auth } from '@/app/(auth)/auth';
+import type { VisibilityType } from '@/components/visibility-selector';
+import { myProvider } from '@/lib/ai/providers';
+import { db } from '@/lib/db';
 import {
   deleteMessagesByChatIdAfterTimestamp,
   getMessageById,
   updateChatVisiblityById,
-  // Assuming these exist or will be created in this path:
-  // updateVisualizationById,
-  // insertVisualization,
 } from '@/lib/db/queries';
-import type { VisibilityType } from '@/components/visibility-selector';
-import { myProvider } from '@/lib/ai/providers';
+import { visualizations } from '@/lib/db/schema';
 
+// This function can remain as is.
 export async function saveChatModelAsCookie(model: string) {
   const cookieStore = await cookies();
   cookieStore.set('chat-model', model);
 }
 
+// This function can remain as is.
 export async function generateTitleFromUserMessage({
   message,
 }: {
@@ -29,7 +34,7 @@ export async function generateTitleFromUserMessage({
 }) {
   const { text: title } = await generateText({
     model: myProvider.languageModel('title-model'),
-    system: `\n
+    system: `
     - you will generate a short title based on the first message a user begins a conversation with
     - ensure it is not more than 80 characters long
     - the title should be a summary of the user's message
@@ -40,6 +45,7 @@ export async function generateTitleFromUserMessage({
   return title;
 }
 
+// This function can remain as is.
 export async function deleteTrailingMessages({ id }: { id: string }) {
   const [message] = await getMessageById({ id });
 
@@ -49,6 +55,7 @@ export async function deleteTrailingMessages({ id }: { id: string }) {
   });
 }
 
+// This function can remain as is.
 export async function updateChatVisibility({
   chatId,
   visibility,
@@ -59,94 +66,126 @@ export async function updateChatVisibility({
   await updateChatVisiblityById({ chatId, visibility });
 }
 
+// The resolved version of the playground conversation action.
 export async function continuePlaygroundConversation(
   formData: FormData,
   visualizationId?: string,
 ) {
-  // TODO: Get user input from formData
+  const aiState = getMutableAIState<typeof AI>();
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    // This is a critical error, we can't proceed.
+    // In a real app, you might return an error message to the UI.
+    throw new Error('User not authenticated.');
+  }
+  const userId = session.user.id;
+
   const userInput = formData.get('input') as string;
-
-  // TODO: Create a message object
-  const userMessage: UIMessage = {
-    id: nanoid(),
-    role: 'user',
-    content: userInput,
-  };
-
-  const messages = [userMessage];
-
-  // TODO: Call streamUI
+  if (!userInput) {
+    // Handle empty input
+    return;
+  }
+  
+  const userMessage = { role: 'user', content: userInput };
+  
   const result = await streamUI({
     model: myProvider.languageModel('chat-model'),
     system:
-      'You are an expert visualization assistant. You will create or refine plots and molecule visualizations based on user requests.',
-    messages,
+      'You are a helpful AI assistant specializing in creating scientific and data visualizations. You have access to tools for creating plots and viewing molecules. When asked to refine a visualization, use your tools to do so.',
+    messages: [...aiState.get().messages, userMessage],
     tools: {
       createPlotlyChart: {
-        description: 'Create a new Plotly chart or update an existing one.',
+        description: 'Creates a Plotly chart from given data and title.',
         parameters: z.object({
           title: z.string().describe('The title of the chart.'),
-          data: z.object({}).passthrough().describe('The Plotly data object.'),
+          data: z.object({}).passthrough().describe('The data for the chart, should be a valid Plotly data structure.'),
         }),
-        render: async function* ({ title, data }) {
-          if (visualizationId) {
-            console.log('Updating Plotly chart with ID:', visualizationId);
-            // Placeholder: await updateVisualizationById({ id: visualizationId, title, data, type: 'plotly' });
-            yield <div>Plotly chart updated: {title}</div>;
-          } else {
-            console.log('Creating new Plotly chart with title:', title);
-            // Placeholder: const newVisualization = await insertVisualization({ title, data, type: 'plotly' });
-            // Placeholder: const newId = newVisualization.id;
-            const newId = 'temp_new_plotly_id'; // Using placeholder ID
-            redirect(`/playground?id=${newId}`);
-            // Important: The redirect call above will interrupt rendering here for the client,
-            // but the generator still needs to yield a final result for the stream.
-            yield <div>Plotly chart created: {title}. Redirecting...</div>;
+        render: async function* (props) {
+          yield <div>Generating plot: {props.title}...</div>;
+
+          try {
+            if (visualizationId) {
+              await db
+                .update(visualizations)
+                .set({ data: props.data, title: props.title })
+                .where(eq(visualizations.id, visualizationId));
+              return <div>Plot "{props.title}" updated successfully.</div>;
+            } else {
+              const newViz = await db
+                .insert(visualizations)
+                .values({
+                  id: uuidv4(),
+                  userId,
+                  chatId: uuidv4(), // Playground chats are self-contained for now.
+                  type: 'plot',
+                  title: props.title,
+                  data: props.data,
+                })
+                .returning({ newId: visualizations.id });
+
+              const newVizId = newViz[0].newId;
+              redirect(`/playground?id=${newVizId}`);
+              // Note: The redirect will interrupt this render flow for the client.
+            }
+          } catch (error) {
+            console.error('Error in createPlotlyChart tool:', error);
+            return <div>Error saving plot. Please try again.</div>;
           }
         },
       },
       showMoleculeStructure: {
-        description: 'Display a molecule structure or update an existing one.',
+        description: 'Displays a molecule structure using a molecular viewer.',
         parameters: z.object({
-          title: z.string().describe('The title of the molecule view.'),
-          data: z
-            .object({})
-            .passthrough()
-            .describe(
-              'The data object for the molecule, e.g., SMILES string or other format.',
-            ),
+          title: z.string().describe('The title or name of the molecule.'),
+          data: z.object({}).passthrough().describe('The data for the molecule, e.g., PDB ID or chemical structure.'),
         }),
-        render: async function* ({ title, data }) {
-          if (visualizationId) {
-            console.log(
-              'Updating molecule structure with ID:',
-              visualizationId,
-            );
-            // Placeholder: await updateVisualizationById({ id: visualizationId, title, data, type: 'molecule' });
-            yield <div>Molecule structure updated: {title}</div>;
-          } else {
-            console.log('Creating new molecule structure with title:', title);
-            // Placeholder: const newVisualization = await insertVisualization({ title, data, type: 'molecule' });
-            // Placeholder: const newId = newVisualization.id;
-            const newId = 'temp_new_molecule_id'; // Using placeholder ID
-            redirect(`/playground?id=${newId}`);
-            yield (
-              <div>Molecule structure created: {title}. Redirecting...</div>
-            );
+        render: async function* (props) {
+          yield <div>Loading molecule: {props.title}...</div>;
+          try {
+            if (visualizationId) {
+              await db
+                .update(visualizations)
+                .set({ data: props.data, title: props.title })
+                .where(eq(visualizations.id, visualizationId));
+              return <div>Molecule "{props.title}" updated successfully.</div>;
+            } else {
+              const newViz = await db
+                .insert(visualizations)
+                .values({
+                  id: uuidv4(),
+                  userId,
+                  chatId: uuidv4(), // Playground chats are self-contained for now.
+                  type: 'molecule',
+                  title: props.title,
+                  data: props.data,
+                })
+                .returning({ newId: visualizations.id });
+              
+              const newVizId = newViz[0].newId;
+              redirect(`/playground?id=${newVizId}`);
+            }
+          } catch (error) {
+            console.error('Error in showMoleculeStructure tool:', error);
+            return <div>Error saving molecule. Please try again.</div>
           }
         },
       },
     },
   });
 
-  return result;
+  return result.value;
 }
+
 
 export const AI = createAI({
   actions: {
     continuePlaygroundConversation,
-    // Other server actions can be added here if they need to be part of the AI context
+    saveChatModelAsCookie,
+    generateTitleFromUserMessage,
+    deleteTrailingMessages,
+    updateChatVisibility,
   },
-  initialAIState: undefined,
-  initialUIState: undefined,
+  initialAIState: { messages: [] },
+  initialUIState: [],
 });
