@@ -1,42 +1,57 @@
-
 import { redirect } from 'next/navigation';
-import { auth } from '@/app/(auth)/auth'; // Assuming auth is used to get userId
-import { db } from '@/lib/db';
-import { visualizations as visualizationsTable } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import { PlaygroundCard } from '@/components/playground-card'; // Import the new card
 import Link from 'next/link';
+import { auth } from '@/app/(auth)/auth';
+import { getUserVisualizations } from '@/lib/db/queries';
+import { PlaygroundCard } from '@/components/playground-card';
+import PlaygroundWorkspace from '@/components/playground-workspace';
 import { Button } from '@/components/ui/button';
-import { PlusIcon } from 'lucide-react';
+import { PlusIcon, ChevronLeft } from 'lucide-react';
 
-export default async function PlaygroundPage({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined };
-}) {
+interface PlaygroundPageProps {
+  searchParams: {
+    id?: string;
+    new?: string;
+  };
+}
+
+export default async function PlaygroundPage({ searchParams }: PlaygroundPageProps) {
   const session = await auth();
   if (!session?.user?.id) {
     redirect('/login?callbackUrl=/playground');
   }
   const userId = session.user.id;
 
-  // Handle 'new' and 'id' search params if needed by other parts of the page
-  // For now, we focus on fetching and displaying visualizations
+  const { id, new: isNew } = searchParams;
 
-  const userVisualizations = await db
-    .select()
-    .from(visualizationsTable)
-    .where(eq(visualizationsTable.userId, userId))
-    .orderBy(visualizationsTable.createdAt); // Optional: order by creation date
+  // If we are in a workspace view (either new or existing), render the workspace.
+  if (id || isNew === 'true') {
+    return (
+      <div className="flex flex-col h-full p-4">
+        <div className="mb-4 flex-shrink-0">
+          <Link href="/playground">
+            <Button variant="outline" size="sm">
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Back to Gallery
+            </Button>
+          </Link>
+        </div>
+        <div className="flex-grow min-h-0">
+          <PlaygroundWorkspace
+            visualizationId={id}
+            isNew={isNew === 'true'}
+          />
+        </div>
+      </div>
+    );
+  }
 
-  // Remove old console.log and h1 if they exist
-  // console.log(userVisualizations);
-  // return <h1>Playground</h1>;
+  // Otherwise, fetch data for and render the gallery view.
+  const userVisualizations = await getUserVisualizations(userId);
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6">
-      <div className="flex justify-between items-center mb-6"> {/* Increased margin bottom */}
-        <h1 className="text-3xl font-bold">Playground</h1> {/* Adjusted text size */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Playground</h1>
         <Link href="/playground?new=true">
           <Button>
             <PlusIcon className="mr-2 h-4 w-4" /> Create New
@@ -45,14 +60,14 @@ export default async function PlaygroundPage({
       </div>
 
       {userVisualizations.length === 0 ? (
-        <div className="text-center text-muted-foreground mt-12"> {/* Increased top margin */}
-          <p className="text-lg">You haven&apos;t created any visualizations yet.</p>
+        <div className="text-center text-muted-foreground mt-12">
+          <p className="text-lg">You haven't created any visualizations yet.</p>
           <p className="text-sm mt-2">
-            Click &quot;Create New&quot; to get started!
+            Click "Create New" to get started!
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"> {/* Adjusted grid and gap */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {userVisualizations.map((viz) => (
             <PlaygroundCard key={viz.id} visualization={viz} />
           ))}
