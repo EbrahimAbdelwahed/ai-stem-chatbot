@@ -2,16 +2,9 @@
 import { PlaygroundChat } from './playground-chat'; // Adjust path if necessary
 import { getChatMessages } from '@/lib/db/queries'; // Adjust path if necessary
 import type { CoreMessage } from 'ai'; // Assuming CoreMessage is the target type
-
-// Mock function for fetching visualization data - replace with actual implementation later
-async function getVisualization(id: string): Promise<{ chatId: string; title: string } | null> {
-  console.log(`Fetching visualization data for ID: ${id}`);
-  // Simulate fetching data
-  if (id === 'existing-viz-123') {
-    return { chatId: 'chat-abc-123', title: 'Existing Visualization' };
-  }
-  return null;
-}
+import { eq } from 'drizzle-orm';
+import { db } from '@/lib/db';
+import { visualizations, type DBMessage } from '@/lib/db/schema';
 
 interface PlaygroundWorkspaceProps {
   isNew?: boolean;
@@ -26,22 +19,24 @@ export default async function PlaygroundWorkspace({
   let chatTitle = 'New Playground Chat'; // Default title
 
   if (visualizationId) {
-    const visualization = await getVisualization(visualizationId);
+    const visualization = await db.query.visualizations.findFirst({
+      where: eq(visualizations.id, visualizationId),
+    });
+
     if (visualization && visualization.chatId) {
       chatTitle = visualization.title || `Chat for ${visualizationId}`;
       try {
-        const dbMessages = await getChatMessages({ chatId: visualization.chatId });
-        // Basic transformation: DBMessage to CoreMessage
-        // This assumes DBMessage has id, role, content, and createdAt.
-        // Adjust based on actual DBMessage structure and CoreMessage requirements.
+        // Corrected call to getChatMessages based on previous subtask
+        const dbMessages: DBMessage[] = await getChatMessages(visualization.chatId);
         initialMessages = dbMessages.map(msg => ({
           id: msg.id,
-          role: msg.role as 'user' | 'assistant' | 'system' | 'function' | 'data' | 'tool', // Cast role
-          content: msg.content || '', // Ensure content is not null
-          // Add other CoreMessage fields if necessary, e.g., from msg.attachments or msg.data
+          role: msg.role as 'user' | 'assistant' | 'system' | 'function' | 'data' | 'tool',
+          content: msg.content ?? '', // Use ?? for nullish coalescing, ensure content is not null
+          // Ensure other CoreMessage fields are mapped if necessary
+          // e.g., data: msg.metadata, experimental_attachments: msg.attachments
         }));
       } catch (error) {
-        console.error(`Failed to get chat messages for ${visualization.chatId}:`, error);
+        console.error(`Failed to get chat messages for chat ID ${visualization.chatId}:`, error);
         // Fallback to empty messages on error
         initialMessages = [];
       }
