@@ -167,7 +167,7 @@ export async function continuePlaygroundConversation(
             }
           } catch (error) {
             console.error('Error in showMoleculeStructure tool:', error);
-            return <div>Error saving molecule. Please try again.</div>
+            return <div>Error saving molecule. Please try again.</div>;
           }
         },
       },
