@@ -16,9 +16,17 @@ export const createPlotlyChart = {
     title: z.string().optional().describe('Optional title to render above the chart'),
   }),
   // Generator so we can show a loading placeholder while the bundle loads on the client
-  generate: async function* ({ figure, title }: { figure: any; title?: string }) {
+  generate: async function* ({
+    figure,
+    title,
+    visualizationId,
+  }: {
+    figure: any;
+    title?: string;
+    visualizationId: string;
+  }) {
     yield <Spinner />;
-    return <PlotlyChart figure={figure} title={title} />;
+    return <PlotlyChart figure={figure} title={title} visualizationId={visualizationId} />;
   },
 };
 
