@@ -48,6 +48,34 @@ export async function getUser(email: string): Promise<Array<User>> {
   }
 }
 
+export async function getChatMessages({ chatId }: { chatId: string }): Promise<DBMessage[]> { // Or Promise<CoreMessage[]> if transformed
+  try {
+    const messagesResult = await db
+      .select() // Select all columns for now, can be refined to match CoreMessage
+      .from(message)
+      .where(eq(message.chatId, chatId))
+      .orderBy(asc(message.createdAt));
+
+    // TODO: Transform DBMessage[] to CoreMessage[] if necessary.
+    // For now, we assume DBMessage is compatible enough.
+    // Example transformation (if needed):
+    // return messagesResult.map(dbMsg => ({
+    //   id: dbMsg.id,
+    //   role: dbMsg.role as 'user' | 'assistant' | 'system' | 'function' | 'data' | 'tool',
+    //   content: dbMsg.content || '', // Ensure content is not null
+    //   // ... other CoreMessage fields if they differ from DBMessage
+    //   // experimental_attachments: dbMsg.attachments, // if types match
+    //   // data: dbMsg.data // if types match
+    // }));
+
+    return messagesResult;
+  } catch (error) {
+    console.error('Failed to get chat messages by chatId:', error);
+    // Consider re-throwing as a ChatSDKError or a custom error
+    throw new Error(`Failed to get chat messages for chat ID: ${chatId}`);
+  }
+}
+
 export async function getUserVisualizations(userId: string) {
   try {
     // Assuming `visualizations` table and its type `Visualization` exist or will be added to the schema
