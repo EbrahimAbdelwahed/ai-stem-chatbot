@@ -48,6 +48,26 @@ export async function getUser(email: string): Promise<Array<User>> {
   }
 }
 
+export async function getUserVisualizations(userId: string) {
+  try {
+    // Assuming `visualizations` table and its type `Visualization` exist or will be added to the schema
+    // @ts-expect-error visualizations is not yet in the schema
+    return await db
+      .select()
+      // @ts-expect-error visualizations is not yet in the schema
+      .from(visualizations)
+      // @ts-expect-error visualizations is not yet in the schema
+      .where(eq(visualizations.userId, userId))
+      // @ts-expect-error visualizations is not yet in the schema
+      .orderBy(desc(visualizations.createdAt));
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get user visualizations',
+    );
+  }
+}
+
 export async function createUser(email: string, password: string) {
   const hashedPassword = generateHashedPassword(password);
 
