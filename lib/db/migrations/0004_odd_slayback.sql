@@ -1,1 +1,1 @@
-ALTER TABLE "Document" ADD COLUMN "text" varchar DEFAULT 'text' NOT NULL;
+-- This file is intentionally left blank to remove the existing migration for the "Document" table.
