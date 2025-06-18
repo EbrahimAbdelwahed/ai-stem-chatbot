@@ -48,12 +48,12 @@ export async function getUser(email: string): Promise<Array<User>> {
   }
 }
 
-export async function getChatMessages({ chatId }: { chatId: string }): Promise<DBMessage[]> { // Or Promise<CoreMessage[]> if transformed
+export async function getChatMessages(chatId: string): Promise<DBMessage[]> { // Or Promise<CoreMessage[]> if transformed
   try {
     const messagesResult = await db
       .select() // Select all columns for now, can be refined to match CoreMessage
       .from(message)
-      .where(eq(message.chatId, chatId))
+      .where(eq(message.chatId, chatId)) // No change needed here as chatId is already used directly
       .orderBy(asc(message.createdAt));
 
     // TODO: Transform DBMessage[] to CoreMessage[] if necessary.
