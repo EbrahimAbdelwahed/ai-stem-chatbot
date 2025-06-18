@@ -102,7 +102,7 @@ export async function continuePlaygroundConversation(
           data: z.object({}).passthrough().describe('The data for the chart, should be a valid Plotly data structure.'),
         }),
         render: async function* (props) {
-          yield (<div>Generating plot: {props.title}...</div>);
+          yield <div>Generating plot: {props.title}...</div>;
 
           try {
             if (visualizationId) {
