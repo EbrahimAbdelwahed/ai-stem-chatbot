@@ -12,8 +12,8 @@ interface ArtifactActionsProps {
   currentVersionIndex: number;
   isCurrentVersion: boolean;
   mode: 'edit' | 'diff';
-  metadata: any;
-  setMetadata: Dispatch<SetStateAction<any>>;
+  metadata: Record<string, unknown>;
+  setMetadata: Dispatch<SetStateAction<Record<string, unknown>>>;
 }
 
 function PureArtifactActions({
@@ -61,7 +61,7 @@ function PureArtifactActions({
 
                 try {
                   await Promise.resolve(action.onClick(actionContext));
-                } catch (error) {
+                } catch {
                   toast.error('Failed to execute action');
                 } finally {
                   setIsLoading(false);
