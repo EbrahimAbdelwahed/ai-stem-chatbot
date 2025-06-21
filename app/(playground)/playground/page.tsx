@@ -27,15 +27,15 @@ export default async function PlaygroundPage({ searchParams }: PlaygroundPagePro
   if (id || isNew === 'true') {
     return (
       <div className="flex flex-col h-full p-4">
-        <div className="mb-4 flex-shrink-0">
+        <div className="mb-4 shrink-0">
           <Link href="/playground">
             <Button variant="outline" size="sm">
-              <ChevronLeft className="mr-2 h-4 w-4" />
+              <ChevronLeft className="mr-2 size-4" />
               Back to Gallery
             </Button>
           </Link>
         </div>
-        <div className="flex-grow min-h-0">
+        <div className="grow min-h-0">
           <PlaygroundWorkspace
             visualizationId={id}
             isNew={isNew === 'true'}
@@ -54,16 +54,16 @@ export default async function PlaygroundPage({ searchParams }: PlaygroundPagePro
         <h1 className="text-3xl font-bold">Playground</h1>
         <Link href="/playground?new=true">
           <Button>
-            <PlusIcon className="mr-2 h-4 w-4" /> Create New
+            <PlusIcon className="mr-2 size-4" /> Create New
           </Button>
         </Link>
       </div>
 
       {userVisualizations.length === 0 ? (
         <div className="text-center text-muted-foreground mt-12">
-          <p className="text-lg">You haven't created any visualizations yet.</p>
+          <p className="text-lg">You haven&apos;t created any visualizations yet.</p>
           <p className="text-sm mt-2">
-            Click "Create New" to get started!
+            Click &quot;Create New&quot; to get started!
           </p>
         </div>
       ) : (

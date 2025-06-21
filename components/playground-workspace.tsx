@@ -34,7 +34,7 @@ export default function PlaygroundWorkspace({ visualizationId, isNew }: Playgrou
   const renderVisualization = () => {
     if (!visualizationId) return null; // Should not happen if isNew is false
     if (vizDetailsError) return <div className="p-4">Error loading visualization details.</div>;
-    if (!vizDetails) return <Skeleton className="h-full w-full" />; // Full panel skeleton
+    if (!vizDetails) return <Skeleton className="size-full" />; // Full panel skeleton
 
     if (vizDetails.type === 'plotly') {
       return <PlotlyArtifact visualizationId={visualizationId} />;
