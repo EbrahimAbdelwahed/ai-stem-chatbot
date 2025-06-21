@@ -83,7 +83,7 @@ export const MolstarViewer: React.FC<MolstarViewerProps> = ({
       // The original implementation removes the container element from the DOM which
       // React still expects to own, leading to `removeChild` errors in StrictMode.
       // eslint-disable-next-line
-      // @ts-ignore
+      // @ts-expect-error This is a necessary patch to avoid React DOM errors.
       plugin.unmount = () => {
         // Prevent Mol* from manipulating DOM nodes that React owns. Simply
         // release WebGL resources; React will take care of tearing down the
@@ -108,7 +108,7 @@ export const MolstarViewer: React.FC<MolstarViewerProps> = ({
       await loadStructure(plugin, pdbId);
 
       setIsLoading(false);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to initialize Mol* viewer:', err);
       setError(`Failed to load structure: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setIsLoading(false);
@@ -135,7 +135,7 @@ export const MolstarViewer: React.FC<MolstarViewerProps> = ({
       // Apply default preset for visualization
       await plugin.builders.structure.hierarchy.applyPreset(trajectory, 'default');
       
-    } catch (err) {
+    } catch (err: unknown) {
       // Fallback to CIF format if BCIF fails
       try {
         const data = await plugin.builders.data.download({
@@ -148,10 +148,10 @@ export const MolstarViewer: React.FC<MolstarViewerProps> = ({
         const trajectory = await plugin.builders.structure.parseTrajectory(data, 'mmcif');
         await plugin.builders.structure.hierarchy.applyPreset(trajectory, 'default');
         
-      } catch (fallbackErr) {
+      } catch (fallbackErr: unknown) {
         // Ensure viewer is cleared so no half-loaded state lingers.
         plugin.clear();
-        throw new Error(`Failed to load structure from both BCIF and CIF sources: ${fallbackErr}`);
+        throw new Error(`Failed to load structure from both BCIF and CIF sources: ${fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr)}`);
       }
     }
   };
@@ -204,7 +204,7 @@ export const MolstarViewer: React.FC<MolstarViewerProps> = ({
     if (pluginRef.current) {
       setIsLoading(true);
       loadStructure(pluginRef.current, pdbId)
-        .catch(err => {
+        .catch((err: unknown) => {
           console.error('Failed to load structure:', err);
           setError(`Failed to load structure: ${err instanceof Error ? err.message : 'Unknown error'}`);
         })
@@ -251,7 +251,7 @@ export const MolstarViewer: React.FC<MolstarViewerProps> = ({
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/90 z-50">
             <div className="text-center space-y-2">
-              <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
+              <div className="size-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
               <div className="text-sm text-gray-600">Loading {pdbId ? pdbId.toUpperCase() : ''}...</div>
             </div>
           </div>

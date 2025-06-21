@@ -60,23 +60,23 @@ export const NGLViewer: React.FC<NGLViewerProps> = ({
             component.autoView();
             setIsLoading(false);
           })
-          .catch((err: any) => {
+          .catch((err: unknown) => {
             console.error('NGL Error:', err);
-            setError(`Failed to load structure: ${err?.message || 'Unknown error'}`);
+            setError(`Failed to load structure: ${err instanceof Error ? err.message : 'Unknown error'}`);
             setIsLoading(false);
             // Dispose the stage early to free resources and avoid double-disposal issues
             try {
               stage.dispose?.();
-            } catch (_) {
+            } catch (_err: unknown) { // Specify type for caught error, even if unused
               /* noop */
             }
             stageRef.current = null;
           });
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         console.error('Failed to dynamically import NGL:', err);
         if (!isDisposed) {
-          setError('Failed to load NGL library.');
+          setError(`Failed to load NGL library: ${err instanceof Error ? err.message : 'Unknown error'}`);
           setIsLoading(false);
         }
       });
@@ -85,7 +85,7 @@ export const NGLViewer: React.FC<NGLViewerProps> = ({
       isDisposed = true;
       try {
         stageRef.current?.dispose?.();
-      } catch (err) {
+      } catch (_err: unknown) { // Specify type for caught error, even if unused
         // ignore dispose errors
       }
       stageRef.current = null;
@@ -114,7 +114,7 @@ export const NGLViewer: React.FC<NGLViewerProps> = ({
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/90 z-50">
             <div className="text-center space-y-2">
-              <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+              <div className="size-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
               <div className="text-sm text-gray-600">Loading {pdbId ? pdbId.toUpperCase() : ''}...</div>
             </div>
           </div>
