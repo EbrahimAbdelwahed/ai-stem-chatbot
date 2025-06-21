@@ -18,9 +18,9 @@ export function PlaygroundCard({ visualization }: PlaygroundCardProps) {
         <CardContent>
           <div className="aspect-video bg-muted flex items-center justify-center rounded-md mb-2">
             {visualization.type === 'plot' ? (
-              <BarChart3Icon className="h-12 w-12 text-muted-foreground" />
+              <BarChart3Icon className="size-12 text-muted-foreground" />
             ) : (
-              <MoleculeIcon className="h-12 w-12 text-muted-foreground" />
+              <MoleculeIcon className="size-12 text-muted-foreground" />
             )}
           </div>
           <p className="text-sm text-muted-foreground line-clamp-3">
