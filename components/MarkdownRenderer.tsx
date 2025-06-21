@@ -1,6 +1,6 @@
 'use client';
 
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useState, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -8,12 +8,17 @@ import rehypeKatex from 'rehype-katex';
 import rehypeHighlight from 'rehype-highlight';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/cjs/styles/prism';
-import { useState } from 'react';
 
 interface MarkdownRendererProps {
   content: string;
   className?: string;
   darkMode?: boolean;
+}
+
+interface CustomCodeProps {
+  className?: string;
+  children: ReactNode;
+  [key: string]: unknown;
 }
 
 const MarkdownRenderer = memo(({ content, className = '', darkMode = true }: MarkdownRendererProps) => {
@@ -52,7 +57,7 @@ const MarkdownRenderer = memo(({ content, className = '', darkMode = true }: Mar
         rehypePlugins={[rehypeKatex, rehypeHighlight]}
         components={{
           // Custom code block rendering with copy functionality
-          code({ node, inline: inlineProp, className, children, ...props }: any) {
+          code({ className, children, ...props }: CustomCodeProps) {
             const inline = !className;
             const match = /language-(\w+)/.exec(className || '');
             const codeString = String(children).replace(/\n$/, '');
@@ -66,9 +71,9 @@ const MarkdownRenderer = memo(({ content, className = '', darkMode = true }: Mar
                     title="Copy code"
                   >
                     {copiedCode === codeString ? (
-                      <CheckIcon className="w-4 h-4" />
+                      <CheckIcon className="size-4" />
                     ) : (
-                      <CopyIcon className="w-4 h-4" />
+                      <CopyIcon className="size-4" />
                     )}
                   </button>
                   <SyntaxHighlighter
@@ -110,7 +115,7 @@ const MarkdownRenderer = memo(({ content, className = '', darkMode = true }: Mar
               >
                 {children}
                 {isExternal && (
-                  <ExternalLinkIcon className="w-3 h-3 inline ml-1" />
+                  <ExternalLinkIcon className="size-3 inline ml-1" />
                 )}
               </a>
             );
