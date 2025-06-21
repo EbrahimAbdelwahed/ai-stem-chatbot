@@ -21,7 +21,7 @@ export default function CodePreview({ code, jsx }: CodePreviewProps) {
     }
     
     return (
-      <div className="w-full h-full overflow-auto p-6">
+      <div className="size-full overflow-auto p-6">
         {/* This would be replaced with actual dynamic component rendering */}
         <div 
           className="preview-container bg-gray-900 p-4 rounded-lg border border-gray-800"
@@ -41,7 +41,7 @@ export default function CodePreview({ code, jsx }: CodePreviewProps) {
     }
     
     return (
-      <div className="w-full h-full overflow-auto">
+      <div className="size-full overflow-auto">
         <pre className="p-4 text-sm font-mono text-gray-300 bg-gray-900 rounded-lg">
           <code>{code}</code>
         </pre>
